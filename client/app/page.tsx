@@ -1,11 +1,5 @@
-import Header from "@/components/header"
-import Hero from "@/components/hero"
+import Homepage from "@/components/homepage"
 
-export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <Header />
-      <Hero />
-    </div>
-  )
+export default function Page() {
+  return <Homepage />
 }
