@@ -2,6 +2,7 @@
 
 import type React from "react";
 
+import { useRouter } from "next/navigation"
 import { useState } from "react";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -31,6 +32,7 @@ export default function AccessWalletComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { setWallet } = useWallet();
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +85,8 @@ export default function AccessWalletComponent() {
         address: wallet.address,
         privateKey: wallet.privateKey,
       });
+
+      router.push("/wallet"); // Redirect to dashboard after successful access
 
       // Optionally: redirect or store address in state/context
     } catch (err) {

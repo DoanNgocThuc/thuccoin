@@ -211,7 +211,7 @@ export default function CreateWalletComponent() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
                 <Button className="bg-white text-black hover:bg-gray-200 flex-1" asChild>
-                  <Link href="/wallet">Access My Wallet</Link>
+                  <Link href="/access-wallet">Access My Wallet</Link>
                 </Button>
                 <Button
                   variant="outline"
