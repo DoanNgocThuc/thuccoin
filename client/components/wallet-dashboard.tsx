@@ -1,10 +1,10 @@
-"use client"
+"use client";
 // to be continue. Now is placeholder code
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Copy,
@@ -17,37 +17,44 @@ import {
   ArrowDownLeft,
   ExternalLink,
   RefreshCw,
-} from "lucide-react"
-import Header from "@/components/header"
+} from "lucide-react";
+import Header from "@/components/header";
+import { useWallet } from "@/lib/context/WalletContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Token {
-  symbol: string
-  name: string
-  balance: string
-  usdValue: string
-  change24h: string
-  isPositive: boolean
+  symbol: string;
+  name: string;
+  balance: string;
+  usdValue: string;
+  change24h: string;
+  isPositive: boolean;
 }
 
 interface Transaction {
-  id: string
-  type: "send" | "receive"
-  amount: string
-  token: string
-  to?: string
-  from?: string
-  timestamp: string
-  status: "completed" | "pending" | "failed"
-  hash: string
+  id: string;
+  type: "send" | "receive";
+  amount: string;
+  token: string;
+  to?: string;
+  from?: string;
+  timestamp: string;
+  status: "completed" | "pending" | "failed";
+  hash: string;
 }
 
 export default function WalletDashboard() {
-  const [showPrivateKey, setShowPrivateKey] = useState(false)
-  const [copiedField, setCopiedField] = useState<string | null>(null)
-
-  // Mock wallet data
-  const walletAddress = "0x742d35Cc6634C0532925a3b8D4C2C4e4C4C4C4C4"
-  const privateKey = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890"
+  const [showPrivateKey, setShowPrivateKey] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { address: walletAddress, privateKey } = useWallet();
+  const router = useRouter();
+  // for unauthenticated access, redirect to access wallet page
+  useEffect(() => {
+    if (!walletAddress || !privateKey) {
+      router.push("/access-wallet");
+    }
+  }, [walletAddress, privateKey]);
 
   const tokens: Token[] = [
     {
@@ -74,7 +81,7 @@ export default function WalletDashboard() {
       change24h: "0.0%",
       isPositive: true,
     },
-  ]
+  ];
 
   const transactions: Transaction[] = [
     {
@@ -127,32 +134,35 @@ export default function WalletDashboard() {
       status: "failed",
       hash: "0x456def123abc...",
     },
-  ]
+  ];
 
-  const totalUsdValue = tokens.reduce((sum, token) => sum + Number.parseFloat(token.usdValue.replace(/,/g, "")), 0)
+  const totalUsdValue = tokens.reduce(
+    (sum, token) => sum + Number.parseFloat(token.usdValue.replace(/,/g, "")),
+    0
+  );
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopiedField(field)
-      setTimeout(() => setCopiedField(null), 2000)
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
-      console.error("Failed to copy text: ", err)
+      console.error("Failed to copy text: ", err);
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-900/20 text-green-400 border-green-600"
+        return "bg-green-900/20 text-green-400 border-green-600";
       case "pending":
-        return "bg-yellow-900/20 text-yellow-400 border-yellow-600"
+        return "bg-yellow-900/20 text-yellow-400 border-yellow-600";
       case "failed":
-        return "bg-red-900/20 text-red-400 border-red-600"
+        return "bg-red-900/20 text-red-400 border-red-600";
       default:
-        return "bg-gray-900/20 text-gray-400 border-gray-600"
+        return "bg-gray-900/20 text-gray-400 border-gray-600";
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -161,7 +171,11 @@ export default function WalletDashboard() {
       <main className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <div className="mb-8">
-          <Button variant="ghost" className="text-white hover:text-gray-300" asChild>
+          <Button
+            variant="ghost"
+            className="text-white hover:text-gray-300"
+            asChild
+          >
             <Link href="/" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -179,7 +193,10 @@ export default function WalletDashboard() {
               </h1>
               <p className="text-gray-400">Manage your digital assets</p>
             </div>
-            <Button variant="outline" className="bg-transparent text-white border-gray-600 hover:bg-gray-900">
+            <Button
+              variant="outline"
+              className="bg-transparent text-white border-gray-600 hover:bg-gray-900"
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -188,11 +205,19 @@ export default function WalletDashboard() {
           {/* Total Balance */}
           <Card className="bg-gray-900 border-gray-800 mb-8">
             <CardContent className="p-8 text-center">
-              <div className="text-sm text-gray-400 mb-2">Total Portfolio Value</div>
-              <div className="text-5xl font-bold text-white mb-4">
-                ${totalUsdValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="text-sm text-gray-400 mb-2">
+                Total Portfolio Value
               </div>
-              <div className="text-green-400 text-lg">+$234.56 (2.1%) today</div>
+              <div className="text-5xl font-bold text-white mb-4">
+                $
+                {totalUsdValue.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <div className="text-green-400 text-lg">
+                +$234.56 (2.1%) today
+              </div>
             </CardContent>
           </Card>
 
@@ -207,7 +232,9 @@ export default function WalletDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard(walletAddress, "address")}
+                      onClick={() =>
+                        copyToClipboard(walletAddress ?? "", "address")
+                      }
                       className="text-gray-400 hover:text-white"
                     >
                       <Copy className="h-4 w-4" />
@@ -217,7 +244,9 @@ export default function WalletDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="bg-gray-800 p-4 rounded-lg">
-                    <p className="text-white font-mono text-sm break-all">{walletAddress}</p>
+                    <p className="text-white font-mono text-sm break-all">
+                      {walletAddress}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -234,13 +263,19 @@ export default function WalletDashboard() {
                         onClick={() => setShowPrivateKey(!showPrivateKey)}
                         className="text-gray-400 hover:text-white"
                       >
-                        {showPrivateKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPrivateKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                         {showPrivateKey ? "Hide" : "Show"}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(privateKey, "private")}
+                        onClick={() =>
+                          copyToClipboard(privateKey ?? "", "private")
+                        }
                         className="text-gray-400 hover:text-white"
                         disabled={!showPrivateKey}
                       >
@@ -256,7 +291,9 @@ export default function WalletDashboard() {
                       {showPrivateKey ? privateKey : "•".repeat(64)}
                     </p>
                   </div>
-                  <p className="text-red-400 text-sm mt-2 font-semibold">⚠️ Never share your private key with anyone</p>
+                  <p className="text-red-400 text-sm mt-2 font-semibold">
+                    ⚠️ Never share your private key with anyone
+                  </p>
                 </CardContent>
               </Card>
 
@@ -268,14 +305,23 @@ export default function WalletDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {tokens.map((token) => (
-                      <div key={token.symbol} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+                      <div
+                        key={token.symbol}
+                        className="flex items-center justify-between p-4 bg-gray-800 rounded-lg"
+                      >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">{token.symbol}</span>
+                            <span className="text-white font-bold text-sm">
+                              {token.symbol}
+                            </span>
                           </div>
                           <div>
-                            <div className="text-white font-semibold">{token.name}</div>
-                            <div className="text-gray-400 text-sm">{token.symbol}</div>
+                            <div className="text-white font-semibold">
+                              {token.name}
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                              {token.symbol}
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
@@ -283,8 +329,16 @@ export default function WalletDashboard() {
                             {token.balance} {token.symbol}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-400">${token.usdValue}</span>
-                            <span className={`text-sm ${token.isPositive ? "text-green-400" : "text-red-400"}`}>
+                            <span className="text-gray-400">
+                              ${token.usdValue}
+                            </span>
+                            <span
+                              className={`text-sm ${
+                                token.isPositive
+                                  ? "text-green-400"
+                                  : "text-red-400"
+                              }`}
+                            >
                               {token.change24h}
                             </span>
                           </div>
@@ -304,19 +358,28 @@ export default function WalletDashboard() {
                   <CardTitle className="text-white">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full bg-white text-black hover:bg-gray-200 justify-start" asChild>
+                  <Button
+                    className="w-full bg-white text-black hover:bg-gray-200 justify-start"
+                    asChild
+                  >
                     <Link href="/send">
                       <Send className="h-4 w-4 mr-2" />
                       Send Tokens
                     </Link>
                   </Button>
-                  <Button className="w-full bg-white text-black hover:bg-gray-200 justify-start" asChild>
+                  <Button
+                    className="w-full bg-white text-black hover:bg-gray-200 justify-start"
+                    asChild
+                  >
                     <Link href="/receive">
                       <Download className="h-4 w-4 mr-2" />
                       Receive Tokens
                     </Link>
                   </Button>
-                  <Button className="w-full bg-white text-black hover:bg-gray-200 justify-start" asChild>
+                  <Button
+                    className="w-full bg-white text-black hover:bg-gray-200 justify-start"
+                    asChild
+                  >
                     <Link href="/swap">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Swap Tokens
@@ -330,7 +393,12 @@ export default function WalletDashboard() {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center justify-between">
                     Transaction History
-                    <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white" asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-white"
+                      asChild
+                    >
                       <Link href="/transactions">
                         View All
                         <ExternalLink className="h-4 w-4 ml-1" />
@@ -341,10 +409,17 @@ export default function WalletDashboard() {
                 <CardContent>
                   <div className="space-y-3">
                     {transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`p-2 rounded-full ${tx.type === "send" ? "bg-red-900/20" : "bg-green-900/20"}`}
+                            className={`p-2 rounded-full ${
+                              tx.type === "send"
+                                ? "bg-red-900/20"
+                                : "bg-green-900/20"
+                            }`}
                           >
                             {tx.type === "send" ? (
                               <ArrowUpRight className="h-4 w-4 text-red-400" />
@@ -354,19 +429,29 @@ export default function WalletDashboard() {
                           </div>
                           <div>
                             <div className="text-white text-sm font-medium">
-                              {tx.type === "send" ? "Sent" : "Received"} {tx.amount} {tx.token}
+                              {tx.type === "send" ? "Sent" : "Received"}{" "}
+                              {tx.amount} {tx.token}
                             </div>
                             <div className="text-gray-400 text-xs">
-                              {tx.type === "send" ? `To: ${tx.to}` : `From: ${tx.from}`}
+                              {tx.type === "send"
+                                ? `To: ${tx.to}`
+                                : `From: ${tx.from}`}
                             </div>
-                            <div className="text-gray-500 text-xs">{tx.timestamp}</div>
+                            <div className="text-gray-500 text-xs">
+                              {tx.timestamp}
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(tx.status)}`}>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${getStatusColor(tx.status)}`}
+                          >
                             {tx.status}
                           </Badge>
-                          <div className="text-gray-400 text-xs mt-1">{tx.hash.substring(0, 8)}...</div>
+                          <div className="text-gray-400 text-xs mt-1">
+                            {tx.hash.substring(0, 8)}...
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -378,5 +463,5 @@ export default function WalletDashboard() {
         </div>
       </main>
     </div>
-  )
+  );
 }
