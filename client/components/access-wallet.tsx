@@ -19,6 +19,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import Header from "@/components/header";
+import { useWallet } from "@/lib/context/WalletContext";
 
 type AccessMethod = "mnemonic" | "privatekey";
 
@@ -29,6 +30,7 @@ export default function AccessWalletComponent() {
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { setWallet } = useWallet();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +79,10 @@ export default function AccessWalletComponent() {
       console.log("Wallet Address:", wallet.address);
 
       alert(`✅ Wallet accessed!\n\nAddress:\n${wallet.address}`);
+      setWallet({
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+      });
 
       // Optionally: redirect or store address in state/context
     } catch (err) {
