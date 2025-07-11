@@ -162,6 +162,8 @@ export default function SwapTokens() {
       const approvalTx = await token.approve(EXCHANGE_ADDRESS, fromAmountParsed)
       await approvalTx.wait()
 
+      await new Promise((res) => setTimeout(res, 2000))
+
       // Step 2: Call sellTokens
       const tx = await exchange.sellTokens(fromAmountParsed)
       await tx.wait()
