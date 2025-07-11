@@ -10,6 +10,11 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, ArrowUpDown, Settings, Info, AlertTriangle, TrendingUp, Zap } from "lucide-react"
 import Header from "@/components/header"
+import { ethers } from "ethers"
+import ThucTokenABI from "@/lib/abis/ThucToken.json"
+import ExchangeABI from "@/lib/abis/ThucTokenExchange.json"
+import { useWallet } from "@/lib/context/WalletContext"
+
 
 interface Token {
   symbol: string
@@ -27,6 +32,12 @@ interface SwapData {
   toAmount: string
 }
 
+declare global {
+  interface Window {
+    ethereum?: any
+  }
+}
+
 export default function SwapTokens() {
   const [swapData, setSwapData] = useState<SwapData>({
     fromToken: "ETH",
@@ -37,6 +48,9 @@ export default function SwapTokens() {
   const [isLoading, setIsLoading] = useState(false)
   const [slippage, setSlippage] = useState("0.5")
   const [showSettings, setShowSettings] = useState(false)
+  const TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  const EXCHANGE_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  const { privateKey } = useWallet()
 
   // Mock token data
   const tokens: Token[] = [
@@ -120,12 +134,49 @@ export default function SwapTokens() {
   }
 
   const handleSwap = async () => {
-    setIsLoading(true)
-    // Simulate swap transaction
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    alert("Swap completed successfully!")
+  if (!swapData.fromAmount || isLoading) return
+  if (!privateKey) {
+    alert("Wallet private key not found. Please connect your wallet.")
+    return
+  }
+  setIsLoading(true)
+
+  try {
+    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/")
+    const signer = new ethers.Wallet(privateKey, provider)
+
+    const token = new ethers.Contract(TOKEN_ADDRESS, ThucTokenABI.abi, signer)
+    const exchange = new ethers.Contract(EXCHANGE_ADDRESS, ExchangeABI.abi, signer)
+    console.log("Using token contract:", token.address)
+
+    const fromAmountParsed = ethers.parseUnits(swapData.fromAmount, 18)
+
+    if (swapData.fromToken === "ETH" && swapData.toToken === "THC") {
+      // ETH → THC: Buy tokens
+      const tx = await exchange.buyTokens({ value: fromAmountParsed })
+      await tx.wait()
+      alert("Swap successful: ETH → THC")
+    } else if (swapData.fromToken === "THC" && swapData.toToken === "ETH") {
+      // THC → ETH: Sell tokens
+      // Step 1: Approve exchange to spend THC
+      const approvalTx = await token.approve(EXCHANGE_ADDRESS, fromAmountParsed)
+      await approvalTx.wait()
+
+      // Step 2: Call sellTokens
+      const tx = await exchange.sellTokens(fromAmountParsed)
+      await tx.wait()
+      alert("Swap successful: THC → ETH")
+    } else {
+      alert("This swap pair is not supported on-chain.")
+    }
+  } catch (error) {
+    console.error(error)
+    alert("Swap failed. Check the console for details.")
+  } finally {
     setIsLoading(false)
   }
+}
+
 
   const fromToken = tokens.find((t) => t.symbol === swapData.fromToken)
   const toToken = tokens.find((t) => t.symbol === swapData.toToken)
@@ -415,41 +466,6 @@ export default function SwapTokens() {
                   <Info className="h-3 w-3" />
                   <span>Powered by ThucCoin DEX • Slippage: {slippage}%</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Swaps */}
-          <Card className="bg-gray-900 border-gray-800 mt-6">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Swaps</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  { from: "ETH", to: "THC", amount: "0.5", time: "2 min ago", status: "completed" },
-                  { from: "THC", to: "USDC", amount: "100", time: "1 hour ago", status: "completed" },
-                  { from: "BTC", to: "THC", amount: "0.01", time: "3 hours ago", status: "completed" },
-                ].map((swap, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg">{tokens.find((t) => t.symbol === swap.from)?.icon}</span>
-                        <ArrowUpDown className="h-3 w-3 text-gray-400" />
-                        <span className="text-lg">{tokens.find((t) => t.symbol === swap.to)?.icon}</span>
-                      </div>
-                      <div>
-                        <div className="text-white text-sm">
-                          {swap.amount} {swap.from} → {swap.to}
-                        </div>
-                        <div className="text-gray-400 text-xs">{swap.time}</div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-600">
-                      {swap.status}
-                    </Badge>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>

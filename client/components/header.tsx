@@ -41,7 +41,7 @@ export default function Header() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link
-                    href="/swap-token"
+                    href={address ? "/swap-token" : "/access-wallet"}
                     className="text-white hover:text-gray-300 transition-colors"
                   >
                     Swap tokens
