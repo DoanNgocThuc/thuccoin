@@ -48,8 +48,8 @@ export default function SwapTokens() {
   const [isLoading, setIsLoading] = useState(false)
   const [slippage, setSlippage] = useState("0.5")
   const [showSettings, setShowSettings] = useState(false)
-  const TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-  const EXCHANGE_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512"
+  const THC_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_THC_TOKEN_ADDRESS || "";
+  const EXCHANGE_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_EXCHANGE_TOKEN_ADDRESS || "";
   const { privateKey } = useWallet()
 
   // Mock token data
@@ -145,8 +145,8 @@ export default function SwapTokens() {
     const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/")
     const signer = new ethers.Wallet(privateKey, provider)
 
-    const token = new ethers.Contract(TOKEN_ADDRESS, ThucTokenABI.abi, signer)
-    const exchange = new ethers.Contract(EXCHANGE_ADDRESS, ExchangeABI.abi, signer)
+    const token = new ethers.Contract(THC_TOKEN_ADDRESS, ThucTokenABI.abi, signer)
+    const exchange = new ethers.Contract(EXCHANGE_TOKEN_ADDRESS, ExchangeABI.abi, signer)
     console.log("Using token contract:", token.address)
 
     const fromAmountParsed = ethers.parseUnits(swapData.fromAmount, 18)
@@ -159,7 +159,7 @@ export default function SwapTokens() {
     } else if (swapData.fromToken === "THC" && swapData.toToken === "ETH") {
       // THC → ETH: Sell tokens
       // Step 1: Approve exchange to spend THC
-      const approvalTx = await token.approve(EXCHANGE_ADDRESS, fromAmountParsed)
+      const approvalTx = await token.approve(EXCHANGE_TOKEN_ADDRESS, fromAmountParsed)
       await approvalTx.wait()
 
       await new Promise((res) => setTimeout(res, 2000))

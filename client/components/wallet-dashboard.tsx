@@ -22,6 +22,8 @@ import Header from "@/components/header";
 import { useWallet } from "@/lib/context/WalletContext";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ethers } from "ethers";
+import ThucTokenABI from "@/lib/abis/ThucToken.json"; // adjust path if needed
 
 interface Token {
   symbol: string;
@@ -47,7 +49,12 @@ interface Transaction {
 export default function WalletDashboard() {
   const [showPrivateKey, setShowPrivateKey] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [ethBalance, setEthBalance] = useState("0.0");
+  const [thcBalance, setThcBalance] = useState("0.0");
   const { address: walletAddress, privateKey } = useWallet();
+  
+  // Contract addresses (fallback to hardcoded if env var not set)
+  const THC_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_THC_TOKEN_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const router = useRouter();
   // for unauthenticated access, redirect to access wallet page
   useEffect(() => {
@@ -56,32 +63,54 @@ export default function WalletDashboard() {
     }
   }, [walletAddress, privateKey]);
 
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (!walletAddress) {
+        console.warn("No wallet address found");
+        return;
+      }
+
+      try {
+        const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/");
+
+        // ETH balance
+        const ethRawBalance = await provider.getBalance(walletAddress);
+        setEthBalance(ethers.formatEther(ethRawBalance));
+
+        // THC token balance
+        const tokenContract = new ethers.Contract(
+          THC_TOKEN_ADDRESS, // your THC contract address
+          ThucTokenABI.abi,
+          provider
+        );
+        const thcRawBalance = await tokenContract.balanceOf(walletAddress);
+        setThcBalance(ethers.formatUnits(thcRawBalance, 18));
+      } catch (err) {
+        console.error("Error fetching balances:", err);
+      }
+    };
+
+    fetchBalances();
+  }, [walletAddress]);
+
   const tokens: Token[] = [
-    {
-      symbol: "ETH",
-      name: "Ethereum",
-      balance: "2.4567",
-      usdValue: "6,142.50",
-      change24h: "+5.2%",
-      isPositive: true,
-    },
-    {
-      symbol: "BTC",
-      name: "Bitcoin",
-      balance: "0.1234",
-      usdValue: "5,432.10",
-      change24h: "-2.1%",
-      isPositive: false,
-    },
-    {
-      symbol: "USDC",
-      name: "USD Coin",
-      balance: "1,250.00",
-      usdValue: "1,250.00",
-      change24h: "0.0%",
-      isPositive: true,
-    },
-  ];
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    balance: parseFloat(ethBalance).toFixed(4),
+    usdValue: (parseFloat(ethBalance) * 2500).toFixed(2), // example price
+    change24h: "+5.2%",
+    isPositive: true,
+  },
+  {
+    symbol: "THC",
+    name: "ThucCoin",
+    balance: parseFloat(thcBalance).toFixed(4),
+    usdValue: (parseFloat(thcBalance) * 2.45).toFixed(2), // example price
+    change24h: "+3.4%",
+    isPositive: true,
+  },
+]
 
   const transactions: Transaction[] = [
     {
