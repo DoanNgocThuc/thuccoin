@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Scan, BookOpen, AlertCircle, Clock, Zap, Shield } from "lucide-react"
 import Header from "@/components/header"
+import { ethers } from "ethers"
+import { useWallet } from "@/lib/context/WalletContext"
+import ThucTokenABI from "@/lib/abis/ThucToken.json"
 
 interface Token {
   symbol: string
@@ -43,6 +46,10 @@ export default function SendToken() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showRecents, setShowRecents] = useState(false)
+  const { address: senderAddress, privateKey } = useWallet()
+  const thucTokenAddress = process.env.NEXT_PUBLIC_THC_TOKEN_ADDRESS!
+
+
 
   // Mock token data
   const tokens: Token[] = [
@@ -114,16 +121,35 @@ export default function SendToken() {
   }
 
   const handleSend = async () => {
-    if (!validateForm()) return
+  if (!validateForm()) return
+  if (!privateKey) return alert("Wallet not loaded")
 
+  try {
     setIsLoading(true)
-    // Simulate transaction
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    alert("Transaction sent successfully!")
-    setIsLoading(false)
-    // Reset form
+
+    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545/") // update if needed
+    const wallet = new ethers.Wallet(privateKey, provider)
+
+    const tokenContract = new ethers.Contract(
+      thucTokenAddress,
+      ThucTokenABI.abi,
+      wallet
+    )
+
+    const amountInWei = ethers.parseUnits(sendData.amount, 18) // THC uses 18 decimals
+
+    const tx = await tokenContract.transfer(sendData.recipient, amountInWei)
+    await tx.wait()
+
+    alert(`Transaction successful! Hash: ${tx.hash}`)
     setSendData({ recipient: "", token: "THC", amount: "", memo: "" })
+  } catch (err: any) {
+    console.error("Transaction failed", err)
+    alert(`Error: ${err.message || "Transaction failed"}`)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -359,40 +385,6 @@ export default function SendToken() {
                 <p className="text-yellow-300 text-sm">
                   Double-check the recipient address. Transactions cannot be reversed once confirmed.
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Recent Transactions */}
-          <Card className="bg-gray-900 border-gray-800 mt-6">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Sends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[
-                  { amount: "50.0", token: "THC", to: "0x123...abc", time: "2 hours ago", status: "completed" },
-                  { amount: "0.1", token: "ETH", to: "0x456...def", time: "1 day ago", status: "completed" },
-                  { amount: "100.0", token: "USDC", to: "0x789...ghi", time: "3 days ago", status: "completed" },
-                ].map((tx, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-900/20 rounded-full">
-                        <Send className="h-4 w-4 text-red-400" />
-                      </div>
-                      <div>
-                        <div className="text-white text-sm">
-                          Sent {tx.amount} {tx.token}
-                        </div>
-                        <div className="text-gray-400 text-xs">To: {tx.to}</div>
-                        <div className="text-gray-500 text-xs">{tx.time}</div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-600">
-                      {tx.status}
-                    </Badge>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
