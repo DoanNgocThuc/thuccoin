@@ -33,10 +33,10 @@ export default function Header() {
               <NavigationMenuList className="space-x-6">
                 <NavigationMenuItem>
                   <Link
-                    href="/buy-crypto"
+                    href={address ? "/send-token" : "/access-wallet"}
                     className="text-white hover:text-gray-300 transition-colors"
                   >
-                    Buy Crypto
+                    Send-token
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
