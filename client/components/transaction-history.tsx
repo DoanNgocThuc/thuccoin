@@ -26,7 +26,6 @@ import {
 import Header from "@/components/header";
 import { useWallet } from "@/lib/context/WalletContext";
 import { useEffect } from "react";
-import { getLocalTransactionHistory } from "@/lib/hardhatTxFetcher";
 
 interface EtherscanTx {
   hash: string;
@@ -58,24 +57,37 @@ export default function TransactionHistory() {
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!address) return;
-
       setLoading(true);
       setError(null);
 
       try {
-        const txs = await getLocalTransactionHistory(address);
-        setTransactions(txs);
+        const res = await fetch("/api/transactions");
+        if (!res.ok) throw new Error("Failed to fetch transactions");
+
+        const data = await res.json();
+
+        // OPTIONAL: If your frontend expects Etherscan-style transactions,
+        // you may need to transform them here before setting:
+        const formatted = data.map((tx: any) => ({
+          hash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          value: tx.value,
+          blockNumber: tx.blockNumber.toString(),
+          timeStamp: Math.floor(Date.now() / 1000).toString(), // fallback
+          isError: "0", // local tx won't fail if included
+        }));
+        setTransactions(formatted);
       } catch (err: any) {
-        console.error("Error fetching local transactions:", err);
-        setError("Failed to fetch transactions.");
+        console.error("Failed to fetch transactions", err);
+        setError(err.message || "Unknown error");
       } finally {
         setLoading(false);
       }
     };
 
     fetchTransactions();
-  }, [address]);
+  }, []);
 
   // Mock wallet address
   const walletAddress = address || "0x1234567890abcdef1234567890abcdef12345678"; // Replace with actual wallet address or mock for testing
