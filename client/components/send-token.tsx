@@ -15,7 +15,7 @@ import { ethers } from "ethers"
 import { useWallet } from "@/lib/context/WalletContext"
 import ThucTokenABI from "@/lib/abis/ThucToken.json"
 import { useEffect } from "react"
-import { getTransactionHistory } from "@/lib/etherscan"
+import { getLocalTransactionHistory } from "@/lib/hardhatTxFetcher"
 
 interface EtherscanTx {
   hash: string
@@ -69,7 +69,7 @@ useEffect(() => {
   const fetchTx = async () => {
     if (!walletAddress) return
     try {
-      const txs = await getTransactionHistory(walletAddress)
+      const txs = await getLocalTransactionHistory(walletAddress)
       setTransactions(txs)
     } catch (err) {
       console.error("Failed to fetch transactions", err)
