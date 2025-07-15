@@ -14,6 +14,19 @@ import Header from "@/components/header"
 import { ethers } from "ethers"
 import { useWallet } from "@/lib/context/WalletContext"
 import ThucTokenABI from "@/lib/abis/ThucToken.json"
+import { useEffect } from "react"
+import { getTransactionHistory } from "@/lib/etherscan"
+
+interface EtherscanTx {
+  hash: string
+  value: string
+  to: string
+  from: string
+  timeStamp: string
+  isError: string
+  // ...more if needed
+}
+
 
 interface Token {
   symbol: string
@@ -49,15 +62,29 @@ export default function SendToken() {
   const { address: senderAddress, privateKey } = useWallet()
   const thucTokenAddress = process.env.NEXT_PUBLIC_THC_TOKEN_ADDRESS!
 
+  const [transactions, setTransactions] = useState<EtherscanTx[]>([])
+const { address: walletAddress } = useWallet()
+
+useEffect(() => {
+  const fetchTx = async () => {
+    if (!walletAddress) return
+    try {
+      const txs = await getTransactionHistory(walletAddress)
+      setTransactions(txs)
+    } catch (err) {
+      console.error("Failed to fetch transactions", err)
+    }
+  }
+
+  fetchTx()
+}, [walletAddress])
+
 
 
   // Mock token data
   const tokens: Token[] = [
     { symbol: "THC", name: "ThucCoin", balance: "1,250.00", price: 2.45, icon: "🪙" },
     { symbol: "ETH", name: "Ethereum", balance: "2.4567", price: 2500.0, icon: "⟠" },
-    { symbol: "BTC", name: "Bitcoin", balance: "0.1234", price: 44000.0, icon: "₿" },
-    { symbol: "USDC", name: "USD Coin", balance: "1,250.00", price: 1.0, icon: "💵" },
-    { symbol: "USDT", name: "Tether", balance: "500.00", price: 1.0, icon: "💰" },
   ]
 
   // Mock recent recipients
@@ -225,10 +252,6 @@ export default function SendToken() {
                     >
                       <BookOpen className="h-4 w-4 mr-1" />
                       Recents
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
-                      <Scan className="h-4 w-4 mr-1" />
-                      Scan QR
                     </Button>
                   </div>
                 </div>
