@@ -48,37 +48,12 @@ export default function Header() {
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-white hover:text-gray-300 bg-transparent">
-                    More features
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="w-48 p-4 bg-gray-900 border border-gray-800">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/staking"
-                          className="block px-3 py-2 text-white hover:text-gray-300 hover:bg-gray-800 rounded"
-                        >
-                          Staking
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/lending"
-                          className="block px-3 py-2 text-white hover:text-gray-300 hover:bg-gray-800 rounded"
-                        >
-                          Lending
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/nft"
-                          className="block px-3 py-2 text-white hover:text-gray-300 hover:bg-gray-800 rounded"
-                        >
-                          NFT Marketplace
-                        </Link>
-                      </NavigationMenuLink>
-                    </div>
-                  </NavigationMenuContent>
+                  <Link
+                    href="/transactions"
+                    className="text-white hover:text-gray-300 transition-colors"
+                  >
+                    Transactions
+                  </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link
