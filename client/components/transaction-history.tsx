@@ -274,7 +274,7 @@ export default function TransactionHistory() {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-white font-medium">
-                                      {txType === "sent" ? "Sent" : "Received"}{" "}
+                                      {txType === "sent" ? "Sent" : "Exchanged"}{" "}
                                       {formatEther(tx.value)} ETH
                                     </span>
                                     <Badge
