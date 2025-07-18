@@ -57,10 +57,10 @@ export default function Header() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link
-                    href="/resources"
+                    href="/mining"
                     className="text-white hover:text-gray-300 transition-colors"
                   >
-                    Resources
+                    Mining
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
