@@ -17,6 +17,11 @@ async function main() {
   // Approve exchange to transfer tokens on behalf of owner (so it can sell)
   await token.approve(exchange.target, initialSupply)
   console.log("Approved exchange to use tokens")
+
+  const PoS = await ethers.getContractFactory("ProofOfStake")
+  const pos = await PoS.deploy()
+  await pos.waitForDeployment()
+  console.log("ProofOfStake deployed to:", pos.target)
 }
 
 main().catch((error) => {
