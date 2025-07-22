@@ -1,14 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
   Coins,
@@ -20,45 +26,50 @@ import {
   AlertTriangle,
   CheckCircle,
   Star,
-} from "lucide-react"
-import Header from "@/components/header"
+} from "lucide-react";
+import Header from "@/components/header";
+import ProofOfStakeABI from "@/lib/abis/ProofOfStake.json";
+import { ethers } from "ethers";
+import { useWallet } from "@/lib/context/WalletContext";
 
 interface StakingPool {
-  id: string
-  name: string
-  apy: number
-  minStake: string
-  lockPeriod: string
-  totalStaked: string
-  validators: number
-  risk: "Low" | "Medium" | "High"
-  featured?: boolean
+  id: string;
+  name: string;
+  apy: number;
+  minStake: string;
+  lockPeriod: string;
+  totalStaked: string;
+  validators: number;
+  risk: "Low" | "Medium" | "High";
+  featured?: boolean;
 }
 
 interface StakingPosition {
-  id: string
-  pool: string
-  amount: string
-  rewards: string
-  startDate: string
-  endDate: string
-  status: "Active" | "Pending" | "Completed"
+  id: string;
+  pool: string;
+  amount: string;
+  rewards: string;
+  startDate: string;
+  endDate: string;
+  status: "Active" | "Pending" | "Completed";
 }
 
 export default function MiningPage() {
-  const [selectedPool, setSelectedPool] = useState<string>("")
-  const [stakeAmount, setStakeAmount] = useState("")
-  const [isStaking, setIsStaking] = useState(false)
+  const { address, privateKey } = useWallet()
+  const [userBalance, setUserBalance] = useState("0.0") // In ETH
+  const [selectedPool, setSelectedPool] = useState<string>("");
+  const [stakeAmount, setStakeAmount] = useState("");
+  const [isStaking, setIsStaking] = useState(false);
 
   // Mock data
-  const userBalance = "1,250.00"
-  const totalRewardsEarned = "45.67"
-  const activeStakes = "500.00"
+  
+  const totalRewardsEarned = "45.67";
+  const activeStakes = "500.00";
 
   const stakingPools: StakingPool[] = [
     {
       id: "pool1",
-      name: "ThucCoin Genesis Pool",
+      name: "ETH Pool",
       apy: 12.5,
       minStake: "100",
       lockPeriod: "30 days",
@@ -98,7 +109,7 @@ export default function MiningPage() {
       validators: 200,
       risk: "Low",
     },
-  ]
+  ];
 
   const stakingPositions: StakingPosition[] = [
     {
@@ -119,43 +130,74 @@ export default function MiningPage() {
       endDate: "2024-04-10",
       status: "Active",
     },
-  ]
+  ];
 
-  const selectedPoolData = stakingPools.find((pool) => pool.id === selectedPool)
+  const selectedPoolData = stakingPools.find(
+    (pool) => pool.id === selectedPool
+  );
 
   const calculateRewards = (): number => {
-    if (!selectedPoolData || !stakeAmount) return 0
-    const amount = Number.parseFloat(stakeAmount)
-    const apy = selectedPoolData.apy / 100
-    return (amount * apy) / 12 // Monthly rewards
-  }
+    if (!selectedPoolData || !stakeAmount) return 0;
+    const amount = Number.parseFloat(stakeAmount);
+    const apy = selectedPoolData.apy / 100;
+    return (amount * apy) / 12; // Monthly rewards
+  };
 
   const getRiskColor = (risk: string): string => {
     switch (risk) {
       case "Low":
-        return "bg-green-900/20 text-green-400 border-green-600"
+        return "bg-green-900/20 text-green-400 border-green-600";
       case "Medium":
-        return "bg-yellow-900/20 text-yellow-400 border-yellow-600"
+        return "bg-yellow-900/20 text-yellow-400 border-yellow-600";
       case "High":
-        return "bg-red-900/20 text-red-400 border-red-600"
+        return "bg-red-900/20 text-red-400 border-red-600";
       default:
-        return "bg-gray-900/20 text-gray-400 border-gray-600"
+        return "bg-gray-900/20 text-gray-400 border-gray-600";
+    }
+  };
+
+  const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_POS_ADDRESS || "";
+
+  async function handleStake() {
+    try {
+      setIsStaking(true)
+
+      if (!privateKey) throw new Error("Wallet not connected")
+
+      const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545")
+      const wallet = new ethers.Wallet(privateKey, provider)
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ProofOfStakeABI.abi, wallet)
+
+      const amountInEther = ethers.parseEther(stakeAmount)
+
+      const tx = await contract.stake({ value: amountInEther })
+      await tx.wait()
+
+      alert("Staking successful!")
+      setStakeAmount("")
+      setSelectedPool("")
+    } catch (error: any) {
+      console.error("Staking failed:", error)
+      alert("Staking failed: " + (error.message || "Unknown error"))
+    } finally {
+      setIsStaking(false)
     }
   }
 
-  const handleStake = async () => {
-    setIsStaking(true)
-    // Simulate staking process
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    alert("Staking successful!")
-    setIsStaking(false)
-    setStakeAmount("")
-    setSelectedPool("")
+  useEffect(() => {
+  async function fetchBalance() {
+    if (!address) return
+    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545")
+    const balance = await provider.getBalance(address)
+    setUserBalance(ethers.formatEther(balance))
   }
+  fetchBalance()
+}, [address])
+
 
   const handleMaxAmount = () => {
-    setStakeAmount(userBalance.replace(/,/g, ""))
-  }
+  setStakeAmount(userBalance)
+}
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -164,7 +206,11 @@ export default function MiningPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <div className="mb-8">
-          <Button variant="ghost" className="text-white hover:text-gray-300" asChild>
+          <Button
+            variant="ghost"
+            className="text-white hover:text-gray-300"
+            asChild
+          >
             <Link href="/wallet" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Wallet
@@ -177,11 +223,11 @@ export default function MiningPage() {
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 flex items-center justify-center gap-3">
               <Coins className="h-12 w-12" />
-              THC Mining (Proof of Stake)
+              ETH Mining (Proof of Stake)
             </h1>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Stake your ThucCoin tokens to secure the network and earn rewards through our Proof of Stake consensus
-              mechanism
+              Stake your ThucCoin tokens to secure the network and earn rewards
+              through our Proof of Stake consensus mechanism
             </p>
           </div>
 
@@ -189,25 +235,35 @@ export default function MiningPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-2">{userBalance} THC</div>
+                <div className="text-3xl font-bold text-white mb-2">
+                  {userBalance} ETH
+                </div>
                 <div className="text-gray-400 text-sm">Available Balance</div>
               </CardContent>
             </Card>
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-green-400 mb-2">{activeStakes} THC</div>
+                <div className="text-3xl font-bold text-green-400 mb-2">
+                  {activeStakes} ETH
+                </div>
                 <div className="text-gray-400 text-sm">Currently Staked</div>
               </CardContent>
             </Card>
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">{totalRewardsEarned} THC</div>
-                <div className="text-gray-400 text-sm">Total Rewards Earned</div>
+                <div className="text-3xl font-bold text-blue-400 mb-2">
+                  {totalRewardsEarned} ETH
+                </div>
+                <div className="text-gray-400 text-sm">
+                  Total Rewards Earned
+                </div>
               </CardContent>
             </Card>
             <Card className="bg-gray-900 border-gray-800">
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-yellow-400 mb-2">15.2%</div>
+                <div className="text-3xl font-bold text-yellow-400 mb-2">
+                  15.2%
+                </div>
                 <div className="text-gray-400 text-sm">Average APY</div>
               </CardContent>
             </Card>
@@ -240,29 +296,47 @@ export default function MiningPage() {
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                              <div className="text-lg font-semibold text-white">{pool.name}</div>
-                              <Badge variant="outline" className={getRiskColor(pool.risk)}>
+                              <div className="text-lg font-semibold text-white">
+                                {pool.name}
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={getRiskColor(pool.risk)}
+                              >
                                 {pool.risk} Risk
                               </Badge>
                             </div>
-                            <div className="text-2xl font-bold text-green-400">{pool.apy}% APY</div>
+                            <div className="text-2xl font-bold text-green-400">
+                              {pool.apy}% APY
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <div className="text-gray-400">Min Stake</div>
-                              <div className="text-white">{pool.minStake} THC</div>
+                              <div className="text-white">
+                                {pool.minStake} ETH
+                              </div>
                             </div>
                             <div>
                               <div className="text-gray-400">Lock Period</div>
-                              <div className="text-white">{pool.lockPeriod}</div>
+                              <div className="text-white">
+                                {pool.lockPeriod}
+                              </div>
                             </div>
                             <div>
                               <div className="text-gray-400">Total Staked</div>
-                              <div className="text-white">{Number.parseInt(pool.totalStaked).toLocaleString()} THC</div>
+                              <div className="text-white">
+                                {Number.parseInt(
+                                  pool.totalStaked
+                                ).toLocaleString()}{" "}
+                                ETH
+                              </div>
                             </div>
                             <div>
                               <div className="text-gray-400">Validators</div>
-                              <div className="text-white">{pool.validators}</div>
+                              <div className="text-white">
+                                {pool.validators}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -274,7 +348,9 @@ export default function MiningPage() {
               {/* All Pools */}
               <Card className="bg-gray-900 border-gray-800">
                 <CardHeader>
-                  <CardTitle className="text-white">All Staking Pools</CardTitle>
+                  <CardTitle className="text-white">
+                    All Staking Pools
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -291,17 +367,24 @@ export default function MiningPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div>
-                              <div className="font-semibold text-white">{pool.name}</div>
+                              <div className="font-semibold text-white">
+                                {pool.name}
+                              </div>
                               <div className="text-sm text-gray-400">
-                                Min: {pool.minStake} THC • {pool.lockPeriod}
+                                Min: {pool.minStake} ETH • {pool.lockPeriod}
                               </div>
                             </div>
-                            <Badge variant="outline" className={getRiskColor(pool.risk)}>
+                            <Badge
+                              variant="outline"
+                              className={getRiskColor(pool.risk)}
+                            >
                               {pool.risk}
                             </Badge>
                           </div>
                           <div className="text-right">
-                            <div className="text-xl font-bold text-green-400">{pool.apy}%</div>
+                            <div className="text-xl font-bold text-green-400">
+                              {pool.apy}%
+                            </div>
                             <div className="text-sm text-gray-400">APY</div>
                           </div>
                         </div>
@@ -314,14 +397,21 @@ export default function MiningPage() {
               {/* Current Positions */}
               <Card className="bg-gray-900 border-gray-800">
                 <CardHeader>
-                  <CardTitle className="text-white">Your Staking Positions</CardTitle>
+                  <CardTitle className="text-white">
+                    Your Staking Positions
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {stakingPositions.map((position) => (
-                      <div key={position.id} className="p-4 bg-gray-800 rounded-lg">
+                      <div
+                        key={position.id}
+                        className="p-4 bg-gray-800 rounded-lg"
+                      >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="font-semibold text-white">{position.pool}</div>
+                          <div className="font-semibold text-white">
+                            {position.pool}
+                          </div>
                           <Badge
                             variant="outline"
                             className={
@@ -336,15 +426,21 @@ export default function MiningPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
                             <div className="text-gray-400">Staked Amount</div>
-                            <div className="text-white">{position.amount} THC</div>
+                            <div className="text-white">
+                              {position.amount} ETH
+                            </div>
                           </div>
                           <div>
                             <div className="text-gray-400">Rewards Earned</div>
-                            <div className="text-green-400">{position.rewards} THC</div>
+                            <div className="text-green-400">
+                              {position.rewards} ETH
+                            </div>
                           </div>
                           <div>
                             <div className="text-gray-400">Start Date</div>
-                            <div className="text-white">{position.startDate}</div>
+                            <div className="text-white">
+                              {position.startDate}
+                            </div>
                           </div>
                           <div>
                             <div className="text-gray-400">End Date</div>
@@ -363,22 +459,31 @@ export default function MiningPage() {
               {/* Stake Interface */}
               <Card className="bg-gray-900 border-gray-800">
                 <CardHeader>
-                  <CardTitle className="text-white">Stake THC Tokens</CardTitle>
+                  <CardTitle className="text-white">Stake ETH Tokens</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Pool Selection */}
                   <div className="space-y-2">
                     <Label className="text-white">Select Staking Pool</Label>
-                    <Select value={selectedPool} onValueChange={setSelectedPool}>
+                    <Select
+                      value={selectedPool}
+                      onValueChange={setSelectedPool}
+                    >
                       <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                         <SelectValue placeholder="Choose a pool..." />
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-700">
                         {stakingPools.map((pool) => (
-                          <SelectItem key={pool.id} value={pool.id} className="text-white">
+                          <SelectItem
+                            key={pool.id}
+                            value={pool.id}
+                            className="text-white"
+                          >
                             <div className="flex items-center justify-between w-full">
                               <span>{pool.name}</span>
-                              <span className="text-green-400 ml-4">{pool.apy}% APY</span>
+                              <span className="text-green-400 ml-4">
+                                {pool.apy}% APY
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -406,29 +511,42 @@ export default function MiningPage() {
                         MAX
                       </Button>
                     </div>
-                    <div className="text-sm text-gray-400">Available: {userBalance} THC</div>
+                    <div className="text-sm text-gray-400">
+                      Available: {userBalance} ETH
+                    </div>
                   </div>
 
                   {/* Pool Details */}
                   {selectedPoolData && (
                     <div className="bg-gray-800 p-4 rounded-lg space-y-2">
-                      <div className="text-white font-semibold mb-2">Pool Details</div>
+                      <div className="text-white font-semibold mb-2">
+                        Pool Details
+                      </div>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-400">APY</span>
-                          <span className="text-green-400">{selectedPoolData.apy}%</span>
+                          <span className="text-green-400">
+                            {selectedPoolData.apy}%
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Lock Period</span>
-                          <span className="text-white">{selectedPoolData.lockPeriod}</span>
+                          <span className="text-white">
+                            {selectedPoolData.lockPeriod}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Minimum Stake</span>
-                          <span className="text-white">{selectedPoolData.minStake} THC</span>
+                          <span className="text-white">
+                            {selectedPoolData.minStake} ETH
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Risk Level</span>
-                          <Badge variant="outline" className={getRiskColor(selectedPoolData.risk)}>
+                          <Badge
+                            variant="outline"
+                            className={getRiskColor(selectedPoolData.risk)}
+                          >
                             {selectedPoolData.risk}
                           </Badge>
                         </div>
@@ -446,11 +564,15 @@ export default function MiningPage() {
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-blue-300">Monthly</span>
-                          <span className="text-white">{calculateRewards().toFixed(4)} THC</span>
+                          <span className="text-white">
+                            {calculateRewards().toFixed(4)} ETH
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-blue-300">Yearly</span>
-                          <span className="text-white">{(calculateRewards() * 12).toFixed(2)} THC</span>
+                          <span className="text-white">
+                            {(calculateRewards() * 12).toFixed(2)} ETH
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -468,7 +590,7 @@ export default function MiningPage() {
                         Staking...
                       </div>
                     ) : (
-                      `Stake ${stakeAmount || "0"} THC`
+                      `Stake ${stakeAmount || "0"} ETH`
                     )}
                   </Button>
 
@@ -476,10 +598,13 @@ export default function MiningPage() {
                   <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-3">
                     <div className="flex items-center gap-2 text-yellow-400 mb-1">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="text-sm font-semibold">Important Notice</span>
+                      <span className="text-sm font-semibold">
+                        Important Notice
+                      </span>
                     </div>
                     <p className="text-yellow-300 text-sm">
-                      Staked tokens will be locked for the specified period. Early withdrawal may result in penalties.
+                      Staked tokens will be locked for the specified period.
+                      Early withdrawal may result in penalties.
                     </p>
                   </div>
                 </CardContent>
@@ -498,7 +623,7 @@ export default function MiningPage() {
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="text-gray-400">Total Staked</span>
-                        <span className="text-white">7.6M THC (76%)</span>
+                        <span className="text-white">7.6M ETH (76%)</span>
                       </div>
                       <Progress value={76} className="h-2" />
                     </div>
@@ -542,7 +667,9 @@ export default function MiningPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-purple-400" />
-                      <span className="text-white">Governance participation</span>
+                      <span className="text-white">
+                        Governance participation
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Zap className="h-4 w-4 text-yellow-400" />
@@ -556,5 +683,5 @@ export default function MiningPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
