@@ -57,7 +57,7 @@ export default function Header() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link
-                    href="/mining"
+                    href={address ? "/mining" : "/access-wallet"}
                     className="text-white hover:text-gray-300 transition-colors"
                   >
                     Mining
