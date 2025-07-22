@@ -69,11 +69,15 @@ You’ll need to prepare **three separate terminals** to run the development set
    ```bash
    cd client
    ```
+2. Install dependencies:
+```bash
+   npm i
+   ```
 
-2. Start the development server:
+3. Start the development server:
 
    ```bash
-   npm run dev
+   npm i
    ```
 
 ---
